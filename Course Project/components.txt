@@ -1,5 +1,32 @@
 //iam using a 1ns/1ns compiler
 
+module four_bit_adder (
+    input [3:0] a,
+    input [3:0] b,
+    input cin,
+    output [3:0] sum,
+    output cout
+);
+  wire [3:0] c;
+
+  genvar i;
+  generate
+    for (i = 0; i < 4; i = i + 1) begin : adder_loop
+      full_adder fa (
+        .a(a[i]),
+        .b(b[i]),
+        .cin(i == 0 ? cin : c[i-1]),// if i=0 its cin, else its the wire c[i-1]
+        .sum(sum[i]),
+        .cout(c[i])
+      );
+    end
+  endgenerate
+
+  assign cout = c[3];// last c, which is cout
+  
+endmodule
+
+
 module full_adder (
     input a,
     input b,

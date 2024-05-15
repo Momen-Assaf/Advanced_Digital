@@ -1,30 +1,65 @@
-module full_adder_tb;//functional
-  reg a, b, cin;
-  wire sum, cout;
+module tb_four_bit_adder;
+  reg [3:0] a, b;
+  reg cin;
+  wire [3:0] sum;
+  wire cout;
 
-  full_adder fa(
+  four_bit_adder fba (
     .a(a), 
     .b(b), 
     .cin(cin), 
     .sum(sum), 
     .cout(cout)
   );
+
   initial begin
-    $dumpfile("dump.vcd"); $dumpvars;
-    a = 0;
-    b = 0;
-    cin = 0;
-    
-    #5;
-    a = 1;
-    b = 1;
-    cin = 1;
-    
-    #28;
+    a = 4'b0101;
+    b = 4'b0011;
+    cin = 1'b0;
+
+    #57;
+    $write("1: a = %b, b = %b, cin = %b, sum = %b, cout = %b\n", a, b, cin, sum, cout);
+
+    a = 4'b1100;
+    b = 4'b1010;
+    cin = 1'b1;
+
+    #57;
+    $write("2: a = %b, b = %b, cin = %b, sum = %b, cout = %b\n", a, b, cin, sum, cout);
+
     $finish;
   end
 
-  always @(sum or cout)
-    $display("sum = %b, cout = %b", sum, cout);
-
 endmodule
+
+
+// module full_adder_tb;//functional
+//   reg a, b, cin;
+//   wire sum, cout;
+
+//   full_adder fa(
+//     .a(a), 
+//     .b(b), 
+//     .cin(cin), 
+//     .sum(sum), 
+//     .cout(cout)
+//   );
+//   initial begin
+// //     $dumpfile("dump.vcd"); $dumpvars;
+//     a = 0;
+//     b = 0;
+//     cin = 0;
+    
+//     #5;
+//     a = 1;
+//     b = 1;
+//     cin = 1;
+    
+//     #28;
+//     $finish;
+//   end
+
+//   always @(sum or cout)
+//     $display("sum = %b, cout = %b", sum, cout);
+
+// endmodule
