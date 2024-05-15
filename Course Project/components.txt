@@ -1,0 +1,24 @@
+//iam using a 1ns/1ns compiler
+
+module full_adder (
+    input a,
+    input b,
+    input cin,
+    output sum,
+    output cout
+);
+  wire w1, w2, w3;
+  
+  // will start instantaniously
+  xor #9ns xor1 (w1,a,b);
+  and #7ns and1 (w2,a,b);
+  
+  //will start after xor1 finishes, after 9ns (when w1 changes)
+  and #7ns and2 (w3,w1,cin);//16ns
+  xor #9ns xor2 (sum,w1,cin);//18ns
+
+  //will start after and1,and2 output, since and1 ends 7ns after the beginning.
+  //it will also wait for and2 output, to begin which happens 16ns after beginning.
+  or #7 or1 (cout,w2,w3);//23ns
+
+endmodule

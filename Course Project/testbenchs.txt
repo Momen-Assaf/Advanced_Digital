@@ -1,0 +1,30 @@
+module full_adder_tb;//functional
+  reg a, b, cin;
+  wire sum, cout;
+
+  full_adder fa(
+    .a(a), 
+    .b(b), 
+    .cin(cin), 
+    .sum(sum), 
+    .cout(cout)
+  );
+  initial begin
+    $dumpfile("dump.vcd"); $dumpvars;
+    a = 0;
+    b = 0;
+    cin = 0;
+    
+    #5;
+    a = 1;
+    b = 1;
+    cin = 1;
+    
+    #28;
+    $finish;
+  end
+
+  always @(sum or cout)
+    $display("sum = %b, cout = %b", sum, cout);
+
+endmodule
