@@ -1,4 +1,5 @@
-module multiplier #(parameter n = 3) (
+module multiplier_fa #(parameter n = 3) (//MAX DELAY IS(n*92)
+//   MAX FREQUENCY IS 1/(n*92) NOTE:THESE CALCULATIONS ARE IN ns
     input [3:0] x,
     input [n:0] y,
     output [n+3:0] res

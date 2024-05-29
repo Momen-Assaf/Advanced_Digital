@@ -1,11 +1,11 @@
-module multiplier_tb;
+module multiplier_fa_tb;
 
   parameter n = 20;
   reg [3:0] x;
   reg [n:0] y;
   wire [n+3:0] res;
   
-  multiplier #(n) mult (
+  multiplier_fa #(n) mult (
     .x(x),
     .y(y),
     .res(res)
@@ -23,7 +23,7 @@ module multiplier_tb;
         y = y_rand;
         x = x_rand;
         expected_res = x_rand * y_rand;
-        #(n*92)
+        #(n*92)//n*(23+4)
         if (res !== expected_res) begin
           $display("Test failed for x = %b, y = %b, expected = %b, got = %b", x_rand, y_rand, expected_res, res);
           $stop;
