@@ -1,36 +1,79 @@
-module tb_four_bit_adder;
-  reg [3:0] a, b;
-  reg cin;
-  wire [3:0] sum;
-  wire cout;
+module multiplier_tb;
 
-  four_bit_adder fba (
-    .a(a), 
-    .b(b), 
-    .cin(cin), 
-    .sum(sum), 
-    .cout(cout)
+  parameter n = 20;
+  reg [3:0] x;
+  reg [n:0] y;
+  wire [n+3:0] res;
+  
+  multiplier #(n) mult (
+    .x(x),
+    .y(y),
+    .res(res)
   );
+  
+  task random_test;
+    integer i;
+    reg [3:0] x_rand;
+    reg [n:0] y_rand;
+    reg [n+3:0] expected_res;
+    begin
+      for (i = 0; i < n*100; i = i + 1) begin
+        x_rand = $random;
+        y_rand = $random;
+        y = y_rand;
+        x = x_rand;
+        expected_res = x_rand * y_rand;
+        #(n*92)
+        if (res !== expected_res) begin
+          $display("Test failed for x = %b, y = %b, expected = %b, got = %b", x_rand, y_rand, expected_res, res);
+          $stop;
+        end
+      end
+      $display("All random tests passed!");
+    end
+  endtask
 
   initial begin
-    a = 4'b0101;
-    b = 4'b0011;
-    cin = 1'b0;
-
-    #57;
-    $write("1: a = %b, b = %b, cin = %b, sum = %b, cout = %b\n", a, b, cin, sum, cout);
-
-    a = 4'b1100;
-    b = 4'b1010;
-    cin = 1'b1;
-
-    #57;
-    $write("2: a = %b, b = %b, cin = %b, sum = %b, cout = %b\n", a, b, cin, sum, cout);
-
-    $finish;
+    random_test();
+    $stop;
   end
 
 endmodule
+
+
+// module tb_four_bit_adder;
+//   reg [3:0] a, b;
+//   reg cin;
+//   wire [3:0] sum;
+//   wire cout;
+
+//   four_bit_adder fba (
+//     .a(a), 
+//     .b(b), 
+//     .cin(cin), 
+//     .sum(sum), 
+//     .cout(cout)
+//   );
+
+//   initial begin
+//     a = 4'b0101;
+//     b = 4'b0011;
+//     cin = 1'b0;
+
+//     #57;
+//     $write("1: a = %b, b = %b, cin = %b, sum = %b, cout = %b\n", a, b, cin, sum, cout);
+
+//     a = 4'b1100;
+//     b = 4'b1010;
+//     cin = 1'b1;
+
+//     #57;
+//     $write("2: a = %b, b = %b, cin = %b, sum = %b, cout = %b\n", a, b, cin, sum, cout);
+
+//     $finish;
+//   end
+
+// endmodule
 
 
 // module full_adder_tb;//functional
