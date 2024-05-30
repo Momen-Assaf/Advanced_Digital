@@ -1,3 +1,45 @@
+module multiplier_cla_tb;
+
+  parameter n = 20;
+  reg [3:0] x;
+  reg [n:0] y;
+  wire [n+3:0] res;
+  
+  multiplier_cla #(n) mult_cla (
+    .x(x),
+    .y(y),
+    .res(res)
+  );
+  
+  task random_test;
+    integer i;
+    reg [3:0] x_rand;
+    reg [n:0] y_rand;
+    reg [n+3:0] expected_res;
+    begin
+      for (i = 0; i < n*100; i = i + 1) begin
+        x_rand = $random;
+        y_rand = $random;
+        y = y_rand;
+        x = x_rand;
+        expected_res = x_rand * y_rand;
+        #(n*74)//check cla for delay calculation
+        if (res !== expected_res) begin
+          $display("Carry look ahead Multiplier: Test failed for x = %b, y = %b, expected = %b, got = %b", x_rand, y_rand, expected_res, res);
+          $stop;
+        end
+      end
+      $display("Carry look ahead Multiplier: All random tests passed!");
+    end
+  endtask
+
+  initial begin
+    random_test();
+//     $stop;
+  end
+
+endmodule
+
 module multiplier_fa_tb;
 
   parameter n = 20;
@@ -5,7 +47,7 @@ module multiplier_fa_tb;
   reg [n:0] y;
   wire [n+3:0] res;
   
-  multiplier_fa #(n) mult (
+  multiplier_fa #(n) mult_fa (
     .x(x),
     .y(y),
     .res(res)
@@ -25,11 +67,11 @@ module multiplier_fa_tb;
         expected_res = x_rand * y_rand;
         #(n*92)//n*(23+4)
         if (res !== expected_res) begin
-          $display("Test failed for x = %b, y = %b, expected = %b, got = %b", x_rand, y_rand, expected_res, res);
+          $display("Full Adder Multiplier: Test failed for x = %b, y = %b, expected = %b, got = %b", x_rand, y_rand, expected_res, res);
           $stop;
         end
       end
-      $display("All random tests passed!");
+      $display("Full Adder Multiplier: All random tests passed!");
     end
   endtask
 
@@ -39,6 +81,40 @@ module multiplier_fa_tb;
   end
 
 endmodule
+
+// module tb_cla_four_bit;
+//   reg [3:0] a, b;
+//   reg cin;
+//   wire [3:0] sum;
+//   wire cout;
+
+//   cla_four_bit clafb (
+//     .a(a), 
+//     .b(b), 
+//     .cin(cin), 
+//     .sum(sum), 
+//     .cout(cout)
+//   );
+
+//   initial begin
+//     a = 4'b0101;
+//     b = 4'b0011;
+//     cin = 1'b0;
+
+//     #74;
+//     $write("1 clafb: a = %b, b = %b, cin = %b, sum = %b, cout = %b\n", a, b, cin, sum, cout);
+
+//     a = 4'b1100;
+//     b = 4'b1010;
+//     cin = 1'b1;
+
+//     #74;
+//     $write("2 clafb: a = %b, b = %b, cin = %b, sum = %b, cout = %b\n", a, b, cin, sum, cout);
+
+// //     $finish;
+//   end
+
+// endmodule
 
 
 // module tb_four_bit_adder;
@@ -60,17 +136,17 @@ endmodule
 //     b = 4'b0011;
 //     cin = 1'b0;
 
-//     #57;
-//     $write("1: a = %b, b = %b, cin = %b, sum = %b, cout = %b\n", a, b, cin, sum, cout);
+//     #92;
+//     $write("1 fba: a = %b, b = %b, cin = %b, sum = %b, cout = %b\n", a, b, cin, sum, cout);
 
 //     a = 4'b1100;
 //     b = 4'b1010;
 //     cin = 1'b1;
 
-//     #57;
-//     $write("2: a = %b, b = %b, cin = %b, sum = %b, cout = %b\n", a, b, cin, sum, cout);
+//     #92;
+//     $write("2 fba: a = %b, b = %b, cin = %b, sum = %b, cout = %b\n", a, b, cin, sum, cout);
 
-//     $finish;
+// //     $finish;
 //   end
 
 // endmodule

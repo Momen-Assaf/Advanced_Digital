@@ -1,3 +1,47 @@
+module multiplier_cla #(parameter n = 3) (//MAX DELAY IS(n*74)
+  //   MAX FREQUENCY IS 1/(n*74) NOTE:THESE CALCULATIONS ARE IN ns
+    input [3:0] x,
+    input [n:0] y,
+    output [n+3:0] res
+);
+  wire [n+3:0] partial_products [n:0]; // Partial products
+  wire [n+3:0] sums [n:0];             // Intermediate sums
+
+  genvar i, j;
+
+  // Generate partial products
+  generate
+    for (i = 0; i <= n; i = i + 1) begin : partial_product_gen
+      for (j = 0; j < 4; j = j + 1) begin : bit_mult
+        assign partial_products[i][j + i] = x[j] & y[i];
+      end
+      // Fill the rest with zeros
+      for (j = 0; j < i; j = j + 1) begin : zero_fill_before
+        assign partial_products[i][j] = 1'b0;
+      end
+      for (j = 4 + i; j <= n + 3; j = j + 1) begin : zero_fill_after
+        assign partial_products[i][j] = 1'b0;
+      end
+    end
+  endgenerate
+
+  assign sums[0] = partial_products[0];
+
+  // Sum the partial products using cascaded 4-bit adders
+  generate
+    for (i = 1; i <= n; i = i + 1) begin : sum_partial_products
+      four_bit_cla_adder_array #(n+4) adder (
+          .a(sums[i-1]),
+          .b(partial_products[i]),
+          .sum(sums[i])
+      );
+    end
+  endgenerate
+
+  assign res = sums[n];
+
+endmodule
+
 module multiplier_fa #(parameter n = 3) (//MAX DELAY IS(n*92)
 //   MAX FREQUENCY IS 1/(n*92) NOTE:THESE CALCULATIONS ARE IN ns
     input [3:0] x,
@@ -42,6 +86,31 @@ module multiplier_fa #(parameter n = 3) (//MAX DELAY IS(n*92)
 
 endmodule
 
+module four_bit_cla_adder_array #(parameter n = 4) (
+  input [n-1:0] a,
+  input [n-1:0] b,
+  output [n-1:0] sum
+);
+  wire [((n + 3) / 4):0] carry;
+  assign carry[0] = 1'b0;
+
+  genvar i;
+  generate
+    for (i = 0; i < n; i = i + 4) begin : adders
+      cla_four_bit claadder (
+          .a(a[i + 3 -: 4]),
+          .b(b[i + 3 -: 4]),
+          .cin(carry[i / 4]),
+          .sum(sum[i + 3 -: 4]),
+          .cout(carry[(i / 4) + 1])
+      );
+    end
+  endgenerate
+
+  assign cout = carry[((n + 3) / 4)];
+endmodule
+
+
 module four_bit_adder_array #(parameter n = 4) (
   input [n-1:0] a,
   input [n-1:0] b,
@@ -67,7 +136,72 @@ module four_bit_adder_array #(parameter n = 4) (
   assign cout = carry[((n + 3) / 4)];
 endmodule
 
-module four_bit_adder (
+
+module cla_four_bit (//max delay is 74ns
+    input [3:0] a,
+    input [3:0] b,
+    input cin,
+    output [3:0] sum,
+    output cout
+);
+  wire [3:0] p, g; // Propagate and generate
+  wire [4:0] c;    // Carry signals
+  
+  // Generate and propagate signals
+  genvar i;
+  generate
+    for (i = 0; i < 4; i = i + 1) begin : gen_pg
+      xor #9ns(p[i], a[i], b[i]); // Propagate
+      and #7ns(g[i], a[i], b[i]); // Generate
+    end
+  endgenerate
+
+  // Carry look-ahead logic
+  assign c[0] = cin;
+
+  // Wires for the carry logic
+  wire [3:0] cp, cg;
+  
+  // Calculate individual carry bits 
+  // Carry[1]
+  assign cg[0] = g[0];//after 7ns(calculating g)
+  and #7ns (cp[0], p[0], c[0]);//after 9ns (9+7 = 16ns)
+  or  #7ns (c[1], cg[0], cp[0]);//16ns+7 = 23ns
+
+  // Carry[2]
+  and #7ns (cg[1], g[1], p[0]);//after 9ns (9+7 =16ns)
+  and #7ns (cp[1], p[1], c[1]);//after 23ns (23ns+7 = 30ns)
+  wire c2_temp;//for delay calculation simplification
+  or  #7ns (c2_temp, g[1], cg[1]);//after 16ns (16ns+7 = 23ns)
+  or  #7ns (c[2], c2_temp, cp[1]);//after 30ns (30ns+7 = 37ns)
+
+  // Carry[3]
+  and #7ns (cg[2], g[2], cg[1]);//after 16ns (16ns+7 = 23ns)
+  and #7ns (cp[2], p[2], c[2]);//after 37ns (37ns+7 = 44ns)
+  wire c3_temp1;//for delay calculation simplification
+  or  #7ns (c3_temp1, g[2], cg[2]);//after 23ns....
+  or  #7ns (c[3], c3_temp1, cp[2]);//after 44ns(44ns+7 = 51ns)
+  
+  // Carry[4]
+  and #7ns (cg[3], g[3], cg[2]);//after 23ns (23ns+7 = 30ns)
+  and #7ns (cp[3], p[3], c[3]);//after 51ns (51ns+7 = 58ns)
+  wire c4_temp1;//for delay calculation simplification
+  or  #7ns (c4_temp1, g[3], cg[3]);//after 30ns...
+  or  #7ns (c[4], c4_temp1, cp[3]);//after 58ns (58ns+7 = 65ns)
+
+  // Sum calculation
+  generate
+    for (i = 0; i < 4; i = i + 1) begin : gen_sum
+      xor #9ns(sum[i], p[i], c[i]);//last will start after 65ns (65ns+9 = 74ns)
+    end
+  endgenerate
+
+  // Final carry-out
+  assign cout = c[4];
+endmodule
+
+
+module four_bit_adder (// max delay is 92ns
     input [3:0] a,
     input [3:0] b,
     input cin,
