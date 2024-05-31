@@ -26,7 +26,7 @@ module multiplier_cla_tb;
         #(n*74)//check cla for delay calculation
         if (res !== expected_res) begin
           $display("Carry look ahead Multiplier: Test failed for x = %b, y = %b, expected = %b, got = %b", x_rand, y_rand, expected_res, res);
-          $stop;
+          return;
         end
       end
       $display("Carry look ahead Multiplier: All random tests passed!");
@@ -35,7 +35,48 @@ module multiplier_cla_tb;
 
   initial begin
     random_test();
-//     $stop;
+  end
+
+endmodule
+
+
+module faulty_multiplier_cla_tb;
+
+  parameter n = 20;
+  reg [3:0] x;
+  reg [n:0] y;
+  wire [n+3:0] res;
+  
+  faulty_multiplier_cla #(n) f_mult_cla (
+    .x(x),
+    .y(y),
+    .res(res)
+  );
+  
+  task random_test;
+    integer i;
+    reg [3:0] x_rand;
+    reg [n:0] y_rand;
+    reg [n+3:0] expected_res;
+    begin
+      for (i = 0; i < n*100; i = i + 1) begin
+        x_rand = $random;
+        y_rand = $random;
+        y = y_rand;
+        x = x_rand;
+        expected_res = x_rand * y_rand;
+        #(n*74)//check cla for delay calculation
+        if (res !== expected_res) begin
+          $display("Faulty Carry look ahead Multiplier: Test failed for x = %b, y = %b, expected = %b, got = %b", x_rand, y_rand, expected_res, res);
+          return;
+        end
+      end
+      $display("Carry look ahead Multiplier: All random tests passed!");
+    end
+  endtask
+
+  initial begin
+    random_test();
   end
 
 endmodule
@@ -68,7 +109,7 @@ module multiplier_fa_tb;
         #(n*92)//n*(23+4)
         if (res !== expected_res) begin
           $display("Full Adder Multiplier: Test failed for x = %b, y = %b, expected = %b, got = %b", x_rand, y_rand, expected_res, res);
-          $stop;
+          return;
         end
       end
       $display("Full Adder Multiplier: All random tests passed!");
@@ -78,6 +119,48 @@ module multiplier_fa_tb;
   initial begin
     random_test();
     $stop;
+  end
+
+endmodule
+
+
+module faulty_multiplier_fa_tb;
+
+  parameter n = 20;
+  reg [3:0] x;
+  reg [n:0] y;
+  wire [n+3:0] res;
+  
+  faulty_multiplier_fa #(n) f_mult_fa (
+    .x(x),
+    .y(y),
+    .res(res)
+  );
+  
+  task random_test;
+    integer i;
+    reg [3:0] x_rand;
+    reg [n:0] y_rand;
+    reg [n+3:0] expected_res;
+    begin
+      for (i = 0; i < n*100; i = i + 1) begin
+        x_rand = $random;
+        y_rand = $random;
+        y = y_rand;
+        x = x_rand;
+        expected_res = x_rand * y_rand;
+        #(n*92)//n*(23+4)
+        if (res !== expected_res) begin
+          $display("Faulty  Full Adder Multiplier: Test failed for x = %b, y = %b, expected = %b, got = %b", x_rand, y_rand, expected_res, res);
+          return;
+        end
+      end
+      $display("Full Adder Multiplier: All random tests passed!");
+    end
+  endtask
+
+  initial begin
+    random_test();
   end
 
 endmodule
