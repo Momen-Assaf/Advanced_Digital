@@ -1,15 +1,25 @@
 module multiplier_cla_tb;
 
   parameter n = 20;
+  parameter MAX_DELAY = (n*74);//check cla for delay calculation
+  reg clk,rst;
   reg [3:0] x;
   reg [n:0] y;
   wire [n+3:0] res;
   
   multiplier_cla #(n) mult_cla (
+    .clk(clk),
+    .rst(rst),
     .x(x),
     .y(y),
     .res(res)
   );
+  
+  initial begin
+    // Clock generation
+    clk = 0;
+    forever #(MAX_DELAY/n) clk = ~clk; 
+  end
   
   task random_test;
     integer i;
@@ -23,7 +33,7 @@ module multiplier_cla_tb;
         y = y_rand;
         x = x_rand;
         expected_res = x_rand * y_rand;
-        #(n*74)//check cla for delay calculation
+        #MAX_DELAY
         if (res !== expected_res) begin
           $display("Carry look ahead Multiplier: Test failed for x = %b, y = %b, expected = %b, got = %b", x_rand, y_rand, expected_res, res);
           return;
@@ -34,48 +44,11 @@ module multiplier_cla_tb;
   endtask
 
   initial begin
-    random_test();
-  end
-
-endmodule
-
-
-module faulty_multiplier_cla_tb;
-
-  parameter n = 20;
-  reg [3:0] x;
-  reg [n:0] y;
-  wire [n+3:0] res;
-  
-  faulty_multiplier_cla #(n) f_mult_cla (
-    .x(x),
-    .y(y),
-    .res(res)
-  );
-  
-  task random_test;
-    integer i;
-    reg [3:0] x_rand;
-    reg [n:0] y_rand;
-    reg [n+3:0] expected_res;
-    begin
-      for (i = 0; i < n*100; i = i + 1) begin
-        x_rand = $random;
-        y_rand = $random;
-        y = y_rand;
-        x = x_rand;
-        expected_res = x_rand * y_rand;
-        #(n*74)//check cla for delay calculation
-        if (res !== expected_res) begin
-          $display("Faulty Carry look ahead Multiplier: Test failed for x = %b, y = %b, expected = %b, got = %b", x_rand, y_rand, expected_res, res);
-          return;
-        end
-      end
-      $display("Carry look ahead Multiplier: All random tests passed!");
-    end
-  endtask
-
-  initial begin
+    // Reset pulse
+    rst = 1;
+    #20;
+    rst = 0;
+    
     random_test();
   end
 
@@ -84,15 +57,27 @@ endmodule
 module multiplier_fa_tb;
 
   parameter n = 20;
+  parameter MAX_DELAY = (n*92);
+  reg clk,rst;
   reg [3:0] x;
   reg [n:0] y;
   wire [n+3:0] res;
   
+  
+  
   multiplier_fa #(n) mult_fa (
+    .clk(clk),
+    .rst(rst),
     .x(x),
     .y(y),
     .res(res)
   );
+  
+  initial begin
+    // Clock generation
+    clk = 0;
+    forever #(MAX_DELAY/n) clk = ~clk; 
+  end
   
   task random_test;
     integer i;
@@ -106,7 +91,7 @@ module multiplier_fa_tb;
         y = y_rand;
         x = x_rand;
         expected_res = x_rand * y_rand;
-        #(n*92)//n*(23+4)
+        #MAX_DELAY//n*(23+4)
         if (res !== expected_res) begin
           $display("Full Adder Multiplier: Test failed for x = %b, y = %b, expected = %b, got = %b", x_rand, y_rand, expected_res, res);
           return;
@@ -117,6 +102,10 @@ module multiplier_fa_tb;
   endtask
 
   initial begin
+    // Reset pulse
+    rst = 1;
+    #20;
+    rst = 0;
     random_test();
     $stop;
   end
@@ -124,18 +113,28 @@ module multiplier_fa_tb;
 endmodule
 
 
-module faulty_multiplier_fa_tb;
+module faulty_multiplier_cla_tb;
 
   parameter n = 20;
+  parameter MAX_DELAY = n*74;
+  reg clk,rst;
   reg [3:0] x;
   reg [n:0] y;
   wire [n+3:0] res;
   
-  faulty_multiplier_fa #(n) f_mult_fa (
+   faulty_multiplier_cla #(n) faulty_cla(
+    .clk(clk),
+    .rst(rst),
     .x(x),
     .y(y),
     .res(res)
   );
+  
+  initial begin
+    // Clock generation
+    clk = 0;
+    forever #(MAX_DELAY/n) clk = ~clk; 
+  end
   
   task random_test;
     integer i;
@@ -149,7 +148,64 @@ module faulty_multiplier_fa_tb;
         y = y_rand;
         x = x_rand;
         expected_res = x_rand * y_rand;
-        #(n*92)//n*(23+4)
+        #MAX_DELAY//check cla for delay calculation
+        if (res !== expected_res) begin
+          $display("Faulty Carry look ahead Multiplier: Test failed for x = %b, y = %b, expected = %b, got = %b", x_rand, y_rand, expected_res, res);
+          return;
+        end
+      end
+      $display("Carry look ahead Multiplier: All random tests passed!");
+    end
+  endtask
+
+  initial begin
+    // Reset pulse
+    rst = 1;
+    #20;
+    rst = 0;
+    
+    random_test();
+  end
+
+endmodule
+
+
+module faulty_multiplier_fa_tb;
+
+  parameter n = 20;
+  parameter MAX_DELAY = (n*92);
+  reg clk,rst;
+  reg [3:0] x;
+  reg [n:0] y;
+  wire [n+3:0] res;
+  
+   faulty_multiplier_fa #(n) faulty_cla(
+    .clk(clk),
+    .rst(rst),
+    .x(x),
+    .y(y),
+    .res(res)
+  );
+  
+  initial begin
+    // Clock generation
+    clk = 0;
+    forever #(MAX_DELAY/n) clk = ~clk; 
+  end
+  
+  task random_test;
+    integer i;
+    reg [3:0] x_rand;
+    reg [n:0] y_rand;
+    reg [n+3:0] expected_res;
+    begin
+      for (i = 0; i < n*100; i = i + 1) begin
+        x_rand = $random;
+        y_rand = $random;
+        y = y_rand;
+        x = x_rand;
+        expected_res = x_rand * y_rand;
+        #MAX_DELAY//n*(23+4)
         if (res !== expected_res) begin
           $display("Faulty  Full Adder Multiplier: Test failed for x = %b, y = %b, expected = %b, got = %b", x_rand, y_rand, expected_res, res);
           return;
@@ -160,6 +216,11 @@ module faulty_multiplier_fa_tb;
   endtask
 
   initial begin
+    // Reset pulse
+    rst = 1;
+    #20;
+    rst = 0;
+    
     random_test();
   end
 

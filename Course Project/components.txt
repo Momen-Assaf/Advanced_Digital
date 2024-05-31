@@ -1,179 +1,272 @@
-module multiplier_cla #(parameter n = 3) (//MAX DELAY IS(n*74)
-  //   MAX FREQUENCY IS 1/(n*74) NOTE:THESE CALCULATIONS ARE IN ns
+module multiplier_cla #(parameter n = 3) ( //MAX DELAY IS(n*74)
+    // MAX FREQUENCY IS 1/(n*74) NOTE: THESE CALCULATIONS ARE IN ns
+    input clk,
+    input rst,
     input [3:0] x,
     input [n:0] y,
-    output [n+3:0] res
+    output reg [n+3:0] res
 );
-  wire [n+3:0] partial_products [n:0]; // Partial products
-  wire [n+3:0] sums [n:0];             // Intermediate sums
+    wire [n+3:0] partial_products [n:0]; // Partial products
+    wire [n+3:0] sums [n:0];             // Intermediate sums
+    reg [3:0] x_reg;
+    reg [n:0] y_reg;
 
-  genvar i, j;
-
-  // Generate partial products
-  generate
-    for (i = 0; i <= n; i = i + 1) begin : partial_product_gen
-      for (j = 0; j < 4; j = j + 1) begin : bit_mult
-        assign partial_products[i][j + i] = x[j] & y[i];
-      end
-      // Fill the rest with zeros
-      for (j = 0; j < i; j = j + 1) begin : zero_fill_before
-        assign partial_products[i][j] = 1'b0;
-      end
-      for (j = 4 + i; j <= n + 3; j = j + 1) begin : zero_fill_after
-        assign partial_products[i][j] = 1'b0;
-      end
+    // Flip-flops for input registers
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            x_reg <= 0;
+            y_reg <= 0;
+        end else begin
+            x_reg <= x;
+            y_reg <= y;
+        end
     end
-  endgenerate
 
-  assign sums[0] = partial_products[0];
+    genvar i, j;
 
-  // Sum the partial products using cascaded 4-bit adders
-  generate
-    for (i = 1; i <= n; i = i + 1) begin : sum_partial_products
-      four_bit_cla_adder_array #(n+4) adder (
-          .a(sums[i-1]),
-          .b(partial_products[i]),
-          .sum(sums[i])
-      );
+    // Generate partial products
+    generate
+        for (i = 0; i <= n; i = i + 1) begin : partial_product_gen
+            for (j = 0; j < 4; j = j + 1) begin : bit_mult
+                assign partial_products[i][j + i] = x_reg[j] & y_reg[i];
+            end
+            // Fill the rest with zeros
+            for (j = 0; j < i; j = j + 1) begin : zero_fill_before
+                assign partial_products[i][j] = 1'b0;
+            end
+            for (j = 4 + i; j <= n + 3; j = j + 1) begin : zero_fill_after
+                assign partial_products[i][j] = 1'b0;
+            end
+        end
+    endgenerate
+
+    assign sums[0] = partial_products[0];
+
+    // Sum the partial products using cascaded 4-bit CLA adders
+    generate
+        for (i = 1; i <= n; i = i + 1) begin : sum_partial_products
+            four_bit_cla_adder_array #(n+4) adder (
+                .a(sums[i-1]),
+                .b(partial_products[i]),
+                .sum(sums[i])
+            );
+        end
+    endgenerate
+
+    // Flip-flop for output register
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            res <= 0;
+        end else begin
+            res <= sums[n];
+        end
     end
-  endgenerate
-
-  assign res = sums[n];
-
-endmodule
-
-module faulty_multiplier_cla #(parameter n = 3) (//MAX DELAY IS(n*74)
-  //   MAX FREQUENCY IS 1/(n*74) NOTE:THESE CALCULATIONS ARE IN ns
-    input [3:0] x,
-    input [n:0] y,
-    output [n+3:0] res
-);
-  wire [n+3:0] partial_products [n:0]; // Partial products
-  wire [n+3:0] sums [n:0];             // Intermediate sums
-
-  genvar i, j;
-
-  // Generate partial products
-  generate
-    for (i = 0; i <= n; i = i + 1) begin : partial_product_gen
-      for (j = 0; j < 4; j = j + 1) begin : bit_mult
-        assign partial_products[i][j + i] = x[j] & y[i];
-      end
-      // Fill the rest with zeros
-      for (j = 0; j < i; j = j + 1) begin : zero_fill_before
-        assign partial_products[i][j] = 1'b0;
-      end
-//       for (j = 4 + i; j <= n + 3; j = j + 1) begin : zero_fill_after
-//         assign partial_products[i][j] = 1'b0;
-//       end
-    end
-  endgenerate
-
-  assign sums[0] = partial_products[0];
-
-  // Sum the partial products using cascaded 4-bit adders
-  generate
-    for (i = 1; i <= n; i = i + 1) begin : sum_partial_products
-      four_bit_cla_adder_array #(n+4) adder (
-          .a(sums[i-1]),
-          .b(partial_products[i]),
-          .sum(sums[i])
-      );
-    end
-  endgenerate
-
-  assign res = sums[n];
-
-endmodule
-
-module multiplier_fa #(parameter n = 3) (//MAX DELAY IS(n*92)
-//   MAX FREQUENCY IS 1/(n*92) NOTE:THESE CALCULATIONS ARE IN ns
-    input [3:0] x,
-    input [n:0] y,
-    output [n+3:0] res
-);
-  wire [n+3:0] partial_products [n:0]; // Partial products
-  wire [n+3:0] sums [n:0];             // Intermediate sums
-
-  genvar i, j;
-
-  // Generate partial products
-  generate
-    for (i = 0; i <= n; i = i + 1) begin : partial_product_gen
-      for (j = 0; j < 4; j = j + 1) begin : bit_mult
-        assign partial_products[i][j + i] = x[j] & y[i];
-      end
-      // Fill the rest with zeros
-      for (j = 0; j < i; j = j + 1) begin : zero_fill_before
-        assign partial_products[i][j] = 1'b0;
-      end
-      for (j = 4 + i; j <= n + 3; j = j + 1) begin : zero_fill_after
-        assign partial_products[i][j] = 1'b0;
-      end
-    end
-  endgenerate
-
-  assign sums[0] = partial_products[0];
-
-  // Sum the partial products using cascaded 4-bit adders
-  generate
-    for (i = 1; i <= n; i = i + 1) begin : sum_partial_products
-      four_bit_adder_array #(n+4) adder (
-          .a(sums[i-1]),
-          .b(partial_products[i]),
-          .sum(sums[i])
-      );
-    end
-  endgenerate
-
-  assign res = sums[n];
 
 endmodule
 
 
-module faulty_multiplier_fa #(parameter n = 3) (//MAX DELAY IS(n*92)
-//   MAX FREQUENCY IS 1/(n*92) NOTE:THESE CALCULATIONS ARE IN ns
+module multiplier_fa #(parameter n = 3) ( //MAX DELAY IS(n*92)
+    // MAX FREQUENCY IS 1/(n*92) NOTE: THESE CALCULATIONS ARE IN ns
+    input clk,
+    input rst,
     input [3:0] x,
     input [n:0] y,
-    output [n+3:0] res
+    output reg [n+3:0] res
 );
-  wire [n+3:0] partial_products [n:0]; // Partial products
-  wire [n+3:0] sums [n:0];             // Intermediate sums
+    wire [n+3:0] partial_products [n:0]; // Partial products
+    wire [n+3:0] sums [n:0];             // Intermediate sums
+    reg [3:0] x_reg;
+    reg [n:0] y_reg;
 
-  genvar i, j;
-
-  // Generate partial products
-  generate
-    for (i = 0; i <= n; i = i + 1) begin : partial_product_gen
-      for (j = 0; j < 4; j = j + 1) begin : bit_mult
-        assign partial_products[i][j + i] = x[j] & y[i];
-      end
-      // Fill the rest with zeros
-      for (j = 0; j < i; j = j + 1) begin : zero_fill_before
-        assign partial_products[i][j] = 1'b0;
-      end
-//       for (j = 4 + i; j <= n + 3; j = j + 1) begin : zero_fill_after
-//         assign partial_products[i][j] = 1'b0;
-//       end
+    // Flip-flops for input registers
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            x_reg <= 0;
+            y_reg <= 0;
+        end else begin
+            x_reg <= x;
+            y_reg <= y;
+        end
     end
-  endgenerate
 
-  assign sums[0] = partial_products[0];
+    genvar i, j;
 
-  // Sum the partial products using cascaded 4-bit adders
-  generate
-    for (i = 1; i <= n; i = i + 1) begin : sum_partial_products
-      four_bit_adder_array #(n+4) adder (
-          .a(sums[i-1]),
-          .b(partial_products[i]),
-          .sum(sums[i])
-      );
+    // Generate partial products
+    generate
+        for (i = 0; i <= n; i = i + 1) begin : partial_product_gen
+            for (j = 0; j < 4; j = j + 1) begin : bit_mult
+                assign partial_products[i][j + i] = x_reg[j] & y_reg[i];
+            end
+            // Fill the rest with zeros
+            for (j = 0; j < i; j = j + 1) begin : zero_fill_before
+                assign partial_products[i][j] = 1'b0;
+            end
+            for (j = 4 + i; j <= n + 3; j = j + 1) begin : zero_fill_after
+                assign partial_products[i][j] = 1'b0;
+            end
+        end
+    endgenerate
+
+    assign sums[0] = partial_products[0];
+
+    // Sum the partial products using cascaded 4-bit adders
+    generate
+        for (i = 1; i <= n; i = i + 1) begin : sum_partial_products
+            four_bit_adder_array #(n+4) adder (
+                .a(sums[i-1]),
+                .b(partial_products[i]),
+                .sum(sums[i])
+            );
+        end
+    endgenerate
+
+    // Flip-flop for output register
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            res <= 0;
+        end else begin
+            res <= sums[n];
+        end
     end
-  endgenerate
-
-  assign res = sums[n];
 
 endmodule
+
+
+module faulty_multiplier_cla #(parameter n = 3) ( //MAX DELAY IS(n*74)
+    // MAX FREQUENCY IS 1/(n*74) NOTE: THESE CALCULATIONS ARE IN ns
+    input clk,
+    input rst,
+    input [3:0] x,
+    input [n:0] y,
+    output reg [n+3:0] res
+);
+    wire [n+3:0] partial_products [n:0]; // Partial products
+    wire [n+3:0] sums [n:0];             // Intermediate sums
+    reg [3:0] x_reg;
+    reg [n:0] y_reg;
+
+    // Flip-flops for input registers
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            x_reg <= 0;
+            y_reg <= 0;
+        end else begin
+            x_reg <= x;
+            y_reg <= y;
+        end
+    end
+
+    genvar i, j;
+
+    // Generate partial products
+    generate
+        for (i = 0; i <= n; i = i + 1) begin : partial_product_gen
+            for (j = 0; j < 4; j = j + 1) begin : bit_mult
+                assign partial_products[i][j + i] = x_reg[j] & y_reg[i];
+            end
+            // Fill the rest with zeros
+            for (j = 0; j < i; j = j + 1) begin : zero_fill_before
+                assign partial_products[i][j] = 1'b0;
+            end
+            // Introduce an error: not zero-filling the higher bits
+            // for (j = 4 + i; j <= n + 3; j = j + 1) begin : zero_fill_after
+            //     assign partial_products[i][j] = 1'b0;
+            // end
+        end
+    endgenerate
+
+    assign sums[0] = partial_products[0];
+
+    // Sum the partial products using cascaded 4-bit CLA adders
+    generate
+        for (i = 1; i <= n; i = i + 1) begin : sum_partial_products
+            four_bit_cla_adder_array #(n+4) adder (
+                .a(sums[i-1]),
+                .b(partial_products[i]),
+                .sum(sums[i])
+            );
+        end
+    endgenerate
+
+    // Flip-flop for output register
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            res <= 0;
+        end else begin
+            res <= sums[n];
+        end
+    end
+
+endmodule
+
+
+module faulty_multiplier_fa #(parameter n = 3) ( //MAX DELAY IS(n*92)
+    // MAX FREQUENCY IS 1/(n*92) NOTE: THESE CALCULATIONS ARE IN ns
+    input clk,
+    input rst,
+    input [3:0] x,
+    input [n:0] y,
+    output reg [n+3:0] res
+);
+    wire [n+3:0] partial_products [n:0]; // Partial products
+    wire [n+3:0] sums [n:0];             // Intermediate sums
+    reg [3:0] x_reg;
+    reg [n:0] y_reg;
+
+    // Flip-flops for input registers
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            x_reg <= 0;
+            y_reg <= 0;
+        end else begin
+            x_reg <= x;
+            y_reg <= y;
+        end
+    end
+
+    genvar i, j;
+
+    // Generate partial products
+    generate
+        for (i = 0; i <= n; i = i + 1) begin : partial_product_gen
+            for (j = 0; j < 4; j = j + 1) begin : bit_mult
+                assign partial_products[i][j + i] = x_reg[j] & y_reg[i];
+            end
+            // Fill the rest with zeros
+            for (j = 0; j < i; j = j + 1) begin : zero_fill_before
+                assign partial_products[i][j] = 1'b0;
+            end
+            // Introduce an error: not zero-filling the higher bits
+            // for (j = 4 + i; j <= n + 3; j = j + 1) begin : zero_fill_after
+            //     assign partial_products[i][j] = 1'b0;
+            // end
+        end
+    endgenerate
+
+    assign sums[0] = partial_products[0];
+
+    // Sum the partial products using cascaded 4-bit adders
+    generate
+        for (i = 1; i <= n; i = i + 1) begin : sum_partial_products
+            four_bit_adder_array #(n+4) adder (
+                .a(sums[i-1]),
+                .b(partial_products[i]),
+                .sum(sums[i])
+            );
+        end
+    endgenerate
+
+    // Flip-flop for output register
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            res <= 0;
+        end else begin
+            res <= sums[n];
+        end
+    end
+
+endmodule
+
 
 
 module four_bit_cla_adder_array #(parameter n = 4) (
